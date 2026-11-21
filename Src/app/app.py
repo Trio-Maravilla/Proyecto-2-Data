@@ -1,0 +1,401 @@
+import streamlit as st
+import json as json
+import plotly.express as px
+import pandas as pd
+import unicodedata
+from pathlib import Path
+
+CARPETA_DATOS = Path(__file__).parent.parent.parent / "Data/Processed"
+
+cambios = {"BOGOTA, D.C.": "BOGOTA", "ARCHIPIELAGO DE SAN ANDRES, PROVIDENCIA Y SANTA CATALINA": "SAN ANDRES", "LA GUAJIRA": "GUAJIRA"}
+
+def limpiar(texto):
+    texto = texto.upper()
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = texto.encode("ascii", "ignore").decode("utf-8")
+    texto = cambios.get(texto, texto)
+    return texto
+
+@st.cache_data
+def cargar_mapa():
+    archivo = open(CARPETA_DATOS / "co_2018_MGN_DPTO_POLITICO.geojson", encoding="utf-8")
+    with archivo:
+        mapa = json.load(archivo)
+    for zona in mapa["features"]:
+        nombre = zona["properties"]["DPTO_CNMBR"]
+        zona["properties"]["nombre_limpio"] = limpiar(nombre)
+    return mapa
+
+@st.cache_data
+def cargar_datos(año):
+    año_str = str(año)
+    tabla = pd.read_csv(CARPETA_DATOS / f"Metricas delitos segun departamento - Filtrado {año_str}.csv")
+    tabla["depto_limpio"] = tabla["DEPARTAMENTO"].apply(limpiar)
+    return tabla
+
+def calcular(tabla, fila, sufijo):
+    nacional = tabla[f"CANTIDAD_{sufijo}"].sum() / tabla["Población"].sum() * 100000
+    tasa = fila[f"TASA_{sufijo}"]
+    if nacional > 0:
+        diferencia = (tasa - nacional / nacional) * 100
+    else:
+        diferencia = 0
+    return tasa, diferencia
+
+def main():
+    st.set_page_config(page_title="IPM-ROBOS", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
+    st.markdown("""
+    <style>
+    .stApp, [data-testid="stHeader"] {
+        background-color: #FFFFFF !important;
+        color: #1E293B !important;
+    }
+    
+    h1, h2, h3, p, span, label, [data-testid="stMetricValue"] {  
+        color: #1E293B !important;
+    }
+    [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+        background-color: #F1F5F9 !important; 
+        border-color: #1E293B !important;    
+        color: #000000 !important;            
+    }
+    /* Flechita de la caja */
+    [data-testid="stSelectbox"] div[data-baseweb="select"] span,
+    [data-testid="stSelectbox"] div[data-baseweb="select"] input {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+    [data-testid="stSelectbox"] svg {
+        fill: #000000 !important;
+        color: #000000 !important;
+    }
+    
+    /* Lista desplegable de la caja */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] > div,
+    ul[role="listbox"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+    }
+
+    /* Opciones dentro del menu */
+    li[role="option"],
+    li[role="option"] span,
+    li[role="option"] div {
+        background-color: #FFFFFF !important;
+        color: #000000 !important;
+    }
+    
+    li[role="option"]:hover,
+    li[role="option"][aria-selected="true"],
+    li[role="option"]:hover span,
+    li[role="option"][aria-selected="true"] span {
+        background-color: #E2E8F0 !important;
+        color: #000000 !important;
+        
+    }
+       
+    [data-testid="stMetricLabel"] span[role="img"] {
+        font-size: 2.2rem !important;
+        vertical-align: middle !important;
+        color: #8B008B !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.title("Pobreza y Delito: ¿Qué tanto influye el IPM en los hurtos en Colombia?")
+    st.caption("Análisis departamental de la relación entre pobreza multidimensional y modalidades de robo (2023–2025).")
+    st.sidebar.header("Datos")
+    st.header("IPM Por departamento")
+    izq_ipm, der_ipm = st.columns([4.5, 3])
+
+    with izq_ipm:
+        año_ipm = st.selectbox("AÑO - IPM", [2023, 2024, 2025])
+        mapa = cargar_mapa()
+        tabla = cargar_datos(año_ipm)
+        fig = px.choropleth(
+            tabla,
+            geojson=mapa,
+            locations="depto_limpio",
+            featureidkey="properties.nombre_limpio",
+            color="Total",
+            color_continuous_scale=["#FDF5E6","#8B008B"],
+            labels={"Total": "% IPM "},
+            range_color=[0, 100],
+            
+        )
+        fig.update_layout(height= 820,margin=dict(l=0, r=0, t=0, b=0),coloraxis_colorbar=dict(lenmode="pixels",len=650,
+                                                                                              thickness=20,x=0.88,outlinecolor="#000000",outlinewidth=1.5, #grosor, distancia del mapa, color, y ancho del color
+                                                                                              tickfont=dict(color="#000000", size=13), # El color de los numeros y el tamaño
+                                                                                              title=dict(font=dict(color="#000000", size=14))), # el titulo de la barra 
+                                                                                              dragmode="pan", paper_bgcolor="rgba(0,0,0,0)",
+                                                                                              clickmode = "event+select")
+        
+        fig.update_geos(visible=False, bgcolor="rgba(0,0,0,0)",projection_type="mercator",lataxis_range=[-4.5, 13.5],lonaxis_range=[-79.5, -66.5])  
+        fig.update_traces(marker_line_color="#000000",  marker_line_width=1.2) 
+        evento = st.plotly_chart(fig, use_container_width=True, on_select="rerun",
+            selection_mode="points",key = "mapa_ipm", config={"scrollZoom": False, "displayModeBar": False})
+    with der_ipm:
+        st.markdown("<div style='margin-top: 85px;'></div>", unsafe_allow_html=True)
+        if evento and evento.selection:
+                puntos_seleccionados = evento.selection.points
+        else:
+            puntos_seleccionados = []
+        if puntos_seleccionados:
+            punto = puntos_seleccionados[0]
+            if "point_index" in punto:
+                datos_mostrar = tabla.iloc[punto["point_index"]]
+            else:
+                depto_elegido = punto["location"]
+                datos_mostrar = tabla[tabla["depto_limpio"] == depto_elegido].iloc[0]
+                
+            st.subheader(f"📍 {datos_mostrar['DEPARTAMENTO']} ({año_ipm})")
+        else:
+            datos_mostrar = tabla.mean(numeric_only = True)
+            st.subheader(f"Promedio General ({año_ipm})")
+            
+        c1, c2 = st.columns(2)
+        analfabetismo = float(datos_mostrar["Analfabetismo"])
+        logro_educativo_bajo = float(datos_mostrar["Bajo logro educativo"])
+        barreras_primera_infancia = float(datos_mostrar["Barreras a servicios para cuidado de la primera infancia"])
+        barreras_servicio_salud = float(datos_mostrar["Barreras de acceso a servicios de salud"])
+        desempleo_prolongado = float(datos_mostrar["Desempleo de larga duración"])
+        hacinamiento_critico = float(datos_mostrar["Hacinamiento crítico"])
+        eliminacion_excretas = float(datos_mostrar["Inadecuada eliminación de excretas"])
+        inasistencia_escolar = float(datos_mostrar["Inasistencia escolar"])
+        material_inadecuado_paredes = float(datos_mostrar["Material inadecuado de paredes exteriores"])
+        material_inadecuado_pisos = float(datos_mostrar["Material inadecuado de pisos"])
+        rezago_escolar = float(datos_mostrar["Rezago escolar"])
+        sin_acceso_al_agua = float(datos_mostrar["Sin acceso a fuente de agua mejorada"])
+        sin_aseguramiento_salud = float(datos_mostrar["Sin aseguramiento en salud"])
+        trabajo_infantil = float(datos_mostrar["Trabajo infantil"])
+        trabajo_informal = float(datos_mostrar["Trabajo informal"])
+        with c1: 
+            st.metric(":material/menu_book: Analfabetismo", f"{analfabetismo:.1f}%")
+            st.metric(":material/school: Bajo logro educativo", f"{logro_educativo_bajo:.1f}%")
+            st.metric(":material/child_care: Cuidado infancia", f"{barreras_primera_infancia:.1f}%")
+            st.metric(":material/local_hospital: Acceso servicios de salud", f"{barreras_servicio_salud:.1f}%")
+            st.metric(":material/hourglass_empty: Desempleo prolongado", f"{desempleo_prolongado:.1f}%")
+            st.metric(":material/groups: Hacinamiento", f"{hacinamiento_critico:.1f}%")
+            st.metric(":material/wc: Eliminacion excretas", f"{eliminacion_excretas:.1f}%")
+            st.metric(":material/backpack: Inasistencia escolar", f"{inasistencia_escolar:.1f}%")
+        with c2: 
+            st.metric(":material/house: Material inadecuado de paredes", f"{material_inadecuado_paredes:.1f}%")
+            st.metric(":material/layers: Material inadecuado de pisos", f"{material_inadecuado_pisos:.1f}%")
+            st.metric(":material/trending_down: Rezago escolar", f"{rezago_escolar:.1f}%")
+            st.metric(":material/water_drop: Sin acceso al agua", f"{sin_acceso_al_agua:.1f}%")
+            st.metric(":material/health_and_safety: Sin aseguramiento en salud", f"{sin_aseguramiento_salud:.1f}%")
+            st.metric(":material/child_friendly: Trabajo infantil", f"{trabajo_infantil:.1f}%")
+            st.metric(":material/construction: Trabajo informal", f"{trabajo_informal:.1f}%")
+            
+    st.divider()
+    
+    # Segundo mapa - Sobre robos
+    
+    st.header("Tipos de robo")
+    st.markdown("**Delitos contra el medio ambiente:** *Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.*")
+    st.markdown("**Delitos informaticos :** *Crímenes cometidos por internet o dispositivos electrónicos. Incluye hackear sistemas, robar contraseñas o datos personales, crear páginas falsas para estafar (phishing), usar virus y robar dinero de cuentas bancarias.*")
+    st.markdown("**Delitos sexuales:** *Cualquier agresión o abuso contra la libertad sexual de alguien, como violaciones, tocamientos abusivos o explotación sexual. Se cuenta por el número de víctimas.*")
+    st.markdown("**Delitos de extorsión:** *Amenazar o presionar a alguien para obligarlo a hacer algo (generalmente pagar dinero) a cambio de no hacerle daño a él, a su familia o a su negocio. Se cuenta por víctimas.*")
+    st.markdown("**Hurto a vehiculos:** *El robo de carros, camionetas o motos. Se cuenta por la cantidad de vehículos robados (unidades), no por personas.*")
+    st.markdown("**Huerto a personas:** *El robo directo de las cosas de valor que alguien lleva encima (celular, billetera, bolso, etc.). Se cuenta por víctimas.*")
+    st.markdown("**Incautacion de estupecafientes:** *No es un delito contra un ciudadano, sino el registro de las drogas ilegales que la Policía logra decomisar en sus operativos. (Estos datos van de enero de 2010 a julio de 2026).*")
+    st.markdown("**Masacres:** *El asesinato intencional y al mismo tiempo de 3 o más personas indefensas en un mismo lugar y por un mismo atacante (sin contar enfrentamientos entre bandas criminales). Se cuenta tanto por casos como por víctimas (medido así desde 2022).*")
+    st.markdown("**Pirateria terrestre:** *Asaltar camiones de carga o buses de pasajeros para robar la mercancía o los bienes que llevan, ya sea en plena carretera o cuando están estacionados. Se cuenta por las personas afectadas.*")
+    st.markdown("**Secuestro:** *Retener a una persona contra su voluntad. Incluye tanto los casos donde no se pide nada a cambio \n como aquellos donde exigen dinero o condiciones para liberarla.*")
+    st.markdown("**Terrorismo:** *Ataques graves (con explosivos o medios destructivos) diseñados para sembrar pánico en la población y poner en peligro vidas, edificios, transporte o comunicaciones. Se cuenta por casos*")
+    st.markdown("**Violencia intrafamiliar:** *Maltrato físico o psicológico dentro del hogar hacia cualquier miembro de la familia o hacia personas que estén bajo el cuidado de alguien en esa casa. Se cuenta por víctimas.*")
+    
+    st.header("Robos por departamento")
+    delitos = {"Medio ambiente":"del_med_ambiente", 
+                            "Informaticos":"del_informaticos",
+                            "Sexuales":"del_sexuales",
+                            " Extorción":"extorsion",
+                            "Hurto vehiculos":"hurto_vehiculos",
+                            "Hurto personas":"hurto_personas",
+                            "Incautacion":"incautacion_estupefacientes",
+                            "Masacres":"masacres",
+                            "Pirateria Terrestre":"pirateria_terrestre",
+                            "Secuestro":"secuestro",
+                            "Terrorismo":"terrorismo",
+                            "Violencia intrafamiliar":"violencia_intrafamiliar"}
+    f1,f2,f3 = st.columns(3)
+    with f1:
+                año_robo = st.selectbox("AÑO - ROBO", [2023, 2024, 2025])
+                tabla_robo = cargar_datos(año_robo)
+                
+    with f2:
+                depto = st.selectbox("DEPARTAMENTO",["AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
+                                                    "BOGOTA","BOLIVAR","BOYACA","CALDAS","CAQUETA",
+                                                    "CASANARE","CAUCA","CESAR","CHOCO","CORDOBA","CUNDINAMARCA",
+                                                    "GUAINIA","GUAVIARE","HUILA","GUAJIRA","MAGDALENA","META","NARIÑO",
+                                                    "NORTE DE SANTANDER","PUTUMAYO","QUINDIO","RISARALDA","SAN ANDRES",
+                                                    "SANTANDER","SUCRE","TOLIMA","VALLE DEL CAUCA","VAUPES","VICHADA"])
+    with f3:
+        delito = st.selectbox("DELITOS", list(delitos.keys()))
+            
+    fila_elegida = tabla_robo[tabla_robo["depto_limpio"] == depto].iloc[0]
+    st.subheader(f"📍 {depto} ({año_robo})")
+    
+    izq_robo, der_robo = st.columns([1,1])
+    
+    with izq_robo:
+        c1, c2 = st.columns(2)
+        with c1:
+            tasa, dif = calcular(tabla_robo, fila_elegida, "del_med_ambiente")
+            st.metric(":material/eco: Medio ambiente", f"{tasa:,.1f}",
+                       delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+
+            tasa, dif = calcular(tabla_robo, fila_elegida, "del_informaticos")
+            st.metric(":material/computer: Informáticos", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+            
+            tasa, dif = calcular(tabla_robo, fila_elegida, "del_sexuales")
+            st.metric(":material/gavel: Sexuales", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+
+            tasa, dif = calcular(tabla_robo, fila_elegida, "extorsion")
+            st.metric(":material/money_off: Extorsion", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+            tasa, dif = calcular(tabla_robo, fila_elegida, "hurto_vehiculos")
+            st.metric(":material/directions_car: Hurto vehiculos", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+
+            tasa, dif = calcular(tabla_robo, fila_elegida, "hurto_personas")
+            st.metric(":material/account_balance_wallet: Huerto personas", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+            
+        with c2:
+            tasa, dif = calcular(tabla_robo, fila_elegida, "incautacion_estupefacientes")
+            st.metric(":material/science: Incautacion estupefacientes", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+
+            tasa, dif = calcular(tabla_robo, fila_elegida, "masacres")
+            st.metric(":material/crisis_alert: masacres", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+            
+            tasa, dif = calcular(tabla_robo, fila_elegida, "pirateria_terrestre")
+            st.metric(":material/local_shipping: Pirateria terrestre", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+
+            tasa, dif = calcular(tabla_robo, fila_elegida, "secuestro")
+            st.metric(":material/lock_person: Secuestro", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+            tasa, dif = calcular(tabla_robo, fila_elegida, "terrorismo")
+            st.metric(":material/explosion: Medio ambiente", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+
+            tasa, dif = calcular(tabla_robo, fila_elegida, "violencia_intrafamiliar")
+            st.metric(":material/family_restroom: Violencia intrafamiliar", f"{tasa:,.1f}",
+                      delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
+        
+        
+
+       
+    with der_robo:
+        columna_tasa = f"TASA_{delitos[delito]}"
+        tabla_robo["Top"] = tabla_robo["DEPARTAMENTO"] == depto
+        
+        fig_rank = px.bar(
+            tabla_robo,
+            x=columna_tasa,
+            y="DEPARTAMENTO",
+            orientation="h",
+            color="Top",
+            color_discrete_map={True: "#8B008B", False: "#FDF5E6"},
+            labels={columna_tasa: "Casos por 100.000 habitantes"},
+        )
+        fig_rank.update_layout(
+            height=800,
+            showlegend=False,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font_color="#000000",
+        )
+        fig_rank.update_yaxes(categoryorder="total ascending")
+        st.plotly_chart(fig_rank, width="stretch", config={"displayModeBar": False})
+    
+    st.divider()
+    st.header("ROBO - IMP")
+    
+    izq_robo, der_robo = st.columns([3,4.5])
+    
+    with der_robo:
+        año_robo = st.selectbox("AÑOS", [2023, 2024, 2025])
+        mapa_robo = cargar_mapa()
+        tabla_robo = cargar_datos(año_robo)
+        fig_robo = px.choropleth(
+            tabla_robo,
+            geojson=mapa_robo,
+            locations="depto_limpio",
+            featureidkey="properties.nombre_limpio",
+            color="Total",
+            color_continuous_scale=["#FDF5E6","#8B008B"], 
+            labels={"Total": "% IPM "},
+            range_color=[0, 100],
+            #colo azul = "#E0FFFF","#008B8B"
+        )
+        fig_robo.update_layout(height= 820,margin=dict(l=0, r=0, t=0, b=0),coloraxis_colorbar=dict(lenmode="pixels",len=650,
+                                                                                              thickness=20,x=0.88,outlinecolor="#000000",outlinewidth=1.5,
+                                                                                              tickfont=dict(color="#000000", size=13),
+                                                                                              title=dict(font=dict(color="#000000", size=14))),
+                                                                                              dragmode="pan", paper_bgcolor="rgba(0,0,0,0)",
+                                                                                              clickmode = "event+select")
+        
+        fig_robo.update_geos(visible=False, bgcolor="rgba(0,0,0,0)",projection_type="mercator",lataxis_range=[-4.5, 13.5],lonaxis_range=[-79.5, -66.5])   
+        fig_robo.update_traces(marker_line_color="#000000",  marker_line_width=1.2) 
+        robo = st.plotly_chart(fig_robo, use_container_width=True, on_select="rerun",
+            selection_mode="points",key="mapa_robos", config={"scrollZoom": False, "displayModeBar": False}) 
+    with izq_robo: 
+        st.markdown("<div style='margin-top: 85px;'></div>", unsafe_allow_html=True)
+
+        if robo and robo.selection:
+                puntos_seleccionados = robo.selection.points
+        else:
+            puntos_seleccionados = []
+            
+        if puntos_seleccionados:
+            punto = puntos_seleccionados[0]
+            if "point_index" in punto:
+                datos_mostrar = tabla_robo.iloc[punto["point_index"]]
+            else:
+                depto_elegido = punto["location"]
+                datos_mostrar = tabla_robo[tabla_robo["depto_limpio"] == depto_elegido].iloc[0]
+                
+            st.subheader(f"📍 {datos_mostrar['DEPARTAMENTO']} ({año_robo})")
+        else:
+            datos_mostrar = tabla_robo.sum(numeric_only = True)
+            st.subheader(f"Total Nacional ({año_robo})")
+            
+        c1, c2 = st.columns(2)
+        medio_ambiente = float(datos_mostrar["CANTIDAD_del_med_ambiente"])
+        delitos_informaticos = float(datos_mostrar["CANTIDAD_del_informaticos"])
+        delitos_sexuales = float(datos_mostrar["CANTIDAD_del_sexuales"])
+        delitos_extorsion = float(datos_mostrar["CANTIDAD_extorsion"])
+        hurto_vehiculos = float(datos_mostrar["CANTIDAD_hurto_vehiculos"])
+        hurto_personas = float(datos_mostrar["CANTIDAD_hurto_personas"])
+        incautacion = float(datos_mostrar["CANTIDAD_incautacion_estupefacientes"])
+        masacres = float(datos_mostrar["CANTIDAD_masacres"])
+        pirateria_terrestre = float(datos_mostrar["CANTIDAD_pirateria_terrestre"])
+        secuestro = float(datos_mostrar["CANTIDAD_secuestro"])
+        terrorismo = float(datos_mostrar["CANTIDAD_terrorismo"])
+        violencia_intrafamiliar = float(datos_mostrar["CANTIDAD_violencia_intrafamiliar"])
+        with c1: 
+            st.metric(":material/eco: Medio ambiente", f"{medio_ambiente:.1f}")
+            st.metric(":material/computer: Informaticos", f"{delitos_informaticos:.1f}")
+            st.metric(":material/gavel: Sexuales", f"{delitos_sexuales:.1f}")
+            st.metric(":material/money_off: Extorción", f"{delitos_extorsion:.1f}")
+            st.metric(":material/directions_car: Hurto vehiculos", f"{hurto_vehiculos:.1f}")
+            st.metric(":material/account_balance_wallet: Hurto personas", f"{hurto_personas:.1f}")
+            
+        with c2: 
+            st.metric(":material/science: Incautacion", f"{incautacion:.1f}")
+            st.metric(":material/crisis_alert: Masacres", f"{masacres:.1f}")
+            st.metric(":material/local_shipping: Pirateria Terrestre", f"{pirateria_terrestre:.1f}")
+            st.metric(":material/lock_person: Secuestro", f"{secuestro:.1f}")
+            st.metric(":material/explosion: Terrorismo", f"{terrorismo:.1f}")
+            st.metric(":material/family_restroom: Violencia intrafamiliar", f"{violencia_intrafamiliar:.1f}")
+    
+    
+    
+main()
