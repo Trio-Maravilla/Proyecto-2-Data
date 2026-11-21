@@ -4,6 +4,7 @@ import plotly.express as px
 import pandas as pd
 import unicodedata
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 CARPETA_DATOS = Path(__file__).parent.parent.parent / "Data/Processed"
 
@@ -100,6 +101,12 @@ def main():
         vertical-align: middle !important;
         color: #8B008B !important;
     }
+    [data-testid="stMainBlockContainer"] {
+    max-width: 1700px;
+    padding-top: 2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    }
     </style>
     """, unsafe_allow_html=True)
     
@@ -193,7 +200,7 @@ def main():
     # Segundo mapa - Sobre robos
     
     st.header("Tipos de robo")
-    st.markdown("**Delitos contra el medio ambiente:** *Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.*")
+    st.markdown("### **Delitos contra el medio ambiente:** *Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.*")
     st.markdown("**Delitos informaticos :** *Crímenes cometidos por internet o dispositivos electrónicos. Incluye hackear sistemas, robar contraseñas o datos personales, crear páginas falsas para estafar (phishing), usar virus y robar dinero de cuentas bancarias.*")
     st.markdown("**Delitos sexuales:** *Cualquier agresión o abuso contra la libertad sexual de alguien, como violaciones, tocamientos abusivos o explotación sexual. Se cuenta por el número de víctimas.*")
     st.markdown("**Delitos de extorsión:** *Amenazar o presionar a alguien para obligarlo a hacer algo (generalmente pagar dinero) a cambio de no hacerle daño a él, a su familia o a su negocio. Se cuenta por víctimas.*")
@@ -241,6 +248,7 @@ def main():
     izq_robo, der_robo = st.columns([1,1])
     
     with izq_robo:
+        
         c1, c2 = st.columns(2)
         with c1:
             tasa, dif = calcular(tabla_robo, fila_elegida, "del_med_ambiente")
@@ -294,34 +302,25 @@ def main():
 
        
     with der_robo:
-        columna_tasa = f"TASA_{delitos[delito]}"
-        tabla_robo["Top"] = tabla_robo["DEPARTAMENTO"] == depto
-        
-        fig_rank = px.bar(
-            tabla_robo,
-            x=columna_tasa,
-            y="DEPARTAMENTO",
-            orientation="h",
-            color="Top",
-            color_discrete_map={True: "#8B008B", False: "#FDF5E6"},
-            labels={columna_tasa: "Casos por 100.000 habitantes"},
-        )
-        fig_rank.update_layout(
-            height=800,
-            showlegend=False,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font_color="#000000",
-        )
-        fig_rank.update_yaxes(categoryorder="total ascending")
-        st.plotly_chart(fig_rank, width="stretch", config={"displayModeBar": False})
+        with st.container(border=True):
+            columna_tasa = f"TASA_{delitos[delito]}"
+            tabla_robo["Top"] = tabla_robo["DEPARTAMENTO"] == depto
+            
+            fig_rank = px.bar(tabla_robo,x=columna_tasa,y="DEPARTAMENTO",orientation="h",color="Top",
+                color_discrete_map={True: "#8B008B", False: "#FDF5E6"},labels={columna_tasa: "Casos por 100.000 habitantes"},)
+            
+            fig_rank.update_layout(height=800, showlegend=False, title=f"Ranking de {delito} en ({año_robo})",
+                paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",font_color="#000000",margin=dict(r=70))
+            fig_rank.update_yaxes(categoryorder="total ascending")
+            fig_rank.update_traces(texttemplate="%{x:,.1f}",textposition="outside",cliponaxis=False)
+            st.plotly_chart(fig_rank, width="stretch", config={"displayModeBar": False})
     
     st.divider()
     st.header("ROBO - IMP")
     
     
     
-    dimensiones = {"Analfabetismo":"Analfabetismo",
+    indicadores = {"Analfabetismo":"Analfabetismo",
                    "Bajo logro educatico":"Bajo logro educativo",
                    "Cuidado primera infancia":"Barreras a servicios para cuidado de la primera infancia",
                    "Acceso servicio de saluid":"Barreras de acceso a servicios de salud",
@@ -340,11 +339,11 @@ def main():
     fi1,fi2,fi3,fi4 = st.columns(4)
     
     with fi1:
-        año_robo = st.selectbox("AÑOS", [2023, 2024, 2025])
-
+        años = st.selectbox("AÑOS", [2023, 2024, 2025])
+        tabla_correlaciones = cargar_datos(años)
 
     with fi2: 
-        depto_2 = st.selectbox("DEPARTAMENTOS",["Todos","AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
+        depto_2 = st.selectbox("DEPARTAMENTOS",["Ninguno","AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
                                                     "BOGOTA","BOLIVAR","BOYACA","CALDAS","CAQUETA",
                                                     "CASANARE","CAUCA","CESAR","CHOCO","CORDOBA","CUNDINAMARCA",
                                                     "GUAINIA","GUAVIARE","HUILA","GUAJIRA","MAGDALENA","META","NARIÑO",
@@ -352,7 +351,7 @@ def main():
                                                     "SANTANDER","SUCRE","TOLIMA","VALLE DEL CAUCA","VAUPES","VICHADA"])
             
     with fi3:
-        lista = ["Ninguno"]
+        lista = []
         for i in delitos.keys():
             
             lista.append(i)
@@ -360,12 +359,76 @@ def main():
         delito_2 = st.selectbox("DELITOS",lista )
         
     with fi4:
-        lista_dimensiones = list(dimensiones.keys())
-        for d in dimensiones.keys():
-            lista_dimensiones.append(d)
-        indices_ipm = st.selectbox("Dimension",lista_dimensiones)
+        lista_indicadores = []
+        for d in indicadores.keys():
+            lista_indicadores.append(d)
+        indices_ipm = st.selectbox("Dimension",lista_indicadores)
+        
+    indicador = indicadores[indices_ipm]
+    crimen= f"TASA_{delitos[delito_2]}"
+    tabla_correlaciones["Elegido"] = tabla_correlaciones["DEPARTAMENTO"] == depto_2
+    
+    col1,col2 = st.columns(2)
+    with col1: 
+        st.header("Grafico de dispersion")
+        with st.container(border=True):
+            
+            fig_scatter = px.scatter(tabla_correlaciones, x=indicador,y=crimen,color="Elegido", color_discrete_sequence= { True: "#D53ED5", False:"#FDF5E6"},
+                                    category_orders={"Elegido":[False,True]},hover_name="DEPARTAMENTO", labels={indicador:f"{indices_ipm} %", crimen:"Casos por 100.000 habitantes"})
+            fig_scatter.update_traces(marker=dict(size=11, line=dict(width=1, color="#1E293B")))
+            fig_scatter.update_layout(height=800, showlegend=False, title=f"{indices_ipm} vs. {delito_2} ({años})",paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",font_color="#000000",)
+            fig_scatter.update_yaxes(rangemode="tozero")
+            st.plotly_chart(fig_scatter,width="stretch", config={"displayModeBar": False})
 
-
+    with col2:
+        if depto_2 == "Ninguno":
+            datos_mostrar = tabla_correlaciones.mean(numeric_only=True)
+            st.subheader("Promedio General")
+        else:
+            datos_mostrar = tabla_correlaciones[tabla_correlaciones["DEPARTAMENTO"] == depto_2].iloc[0]
+            st.subheader(f"📍 {datos_mostrar['DEPARTAMENTO']} ({años})")
+            
+        c1, c2 = st.columns(2)
+        analfabetismo = float(datos_mostrar["Analfabetismo"])
+        logro_educativo_bajo = float(datos_mostrar["Bajo logro educativo"])
+        barreras_primera_infancia = float(datos_mostrar["Barreras a servicios para cuidado de la primera infancia"])
+        barreras_servicio_salud = float(datos_mostrar["Barreras de acceso a servicios de salud"])
+        desempleo_prolongado = float(datos_mostrar["Desempleo de larga duración"])
+        hacinamiento_critico = float(datos_mostrar["Hacinamiento crítico"])
+        eliminacion_excretas = float(datos_mostrar["Inadecuada eliminación de excretas"])
+        inasistencia_escolar = float(datos_mostrar["Inasistencia escolar"])
+        material_inadecuado_paredes = float(datos_mostrar["Material inadecuado de paredes exteriores"])
+        material_inadecuado_pisos = float(datos_mostrar["Material inadecuado de pisos"])
+        rezago_escolar = float(datos_mostrar["Rezago escolar"])
+        sin_acceso_al_agua = float(datos_mostrar["Sin acceso a fuente de agua mejorada"])
+        sin_aseguramiento_salud = float(datos_mostrar["Sin aseguramiento en salud"])
+        trabajo_infantil = float(datos_mostrar["Trabajo infantil"])
+        trabajo_informal = float(datos_mostrar["Trabajo informal"])
+        with c1: 
+            st.metric(":material/menu_book: Analfabetismo", f"{analfabetismo:.1f}%")
+            st.metric(":material/school: Bajo logro educativo", f"{logro_educativo_bajo:.1f}%")
+            st.metric(":material/child_care: Cuidado infancia", f"{barreras_primera_infancia:.1f}%")
+            st.metric(":material/local_hospital: Acceso servicios de salud", f"{barreras_servicio_salud:.1f}%")
+            st.metric(":material/hourglass_empty: Desempleo prolongado", f"{desempleo_prolongado:.1f}%")
+            st.metric(":material/groups: Hacinamiento", f"{hacinamiento_critico:.1f}%")
+            st.metric(":material/wc: Eliminacion excretas", f"{eliminacion_excretas:.1f}%")
+            st.metric(":material/backpack: Inasistencia escolar", f"{inasistencia_escolar:.1f}%")
+        with c2: 
+            st.metric(":material/house: Material inadecuado de paredes", f"{material_inadecuado_paredes:.1f}%")
+            st.metric(":material/layers: Material inadecuado de pisos", f"{material_inadecuado_pisos:.1f}%")
+            st.metric(":material/trending_down: Rezago escolar", f"{rezago_escolar:.1f}%")
+            st.metric(":material/water_drop: Sin acceso al agua", f"{sin_acceso_al_agua:.1f}%")
+            st.metric(":material/health_and_safety: Sin aseguramiento en salud", f"{sin_aseguramiento_salud:.1f}%")
+            st.metric(":material/child_friendly: Trabajo infantil", f"{trabajo_infantil:.1f}%")
+            st.metric(":material/construction: Trabajo informal", f"{trabajo_informal:.1f}%")
+            
+    
+    with st.expander("📌Notas de metodologia y advertencias",expanded=False):
+        st.markdown("""
+                    Para realizar el analisis se juntaron 12 archivos diferentes de delitos y 1 del DANE con la informacion del IPM
+                    * **SESGOS**
+                    * El analisis cuenta con la cantidad de robos registrados, esto no implica que sean los que mas ocurren sino los que mas estan registrados
+                    * Tambien pueden haber manipulacion de datos para hacer que un pais no quede mal al momento del analisi""")
     
     
 main()
