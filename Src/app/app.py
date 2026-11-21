@@ -34,6 +34,12 @@ def cargar_datos(año):
     tabla["depto_limpio"] = tabla["DEPARTAMENTO"].apply(limpiar)
     return tabla
 
+@st.cache_data
+def cargar_todos():
+    tabla = pd.read_csv(CARPETA_DATOS / "Metricas delitos segun departamento - 2023-2025.csv")
+    tabla["depto_limpio"] = tabla["DEPARTAMENTO"].apply(limpiar)
+    return tabla
+
 def calcular(tabla, fila, sufijo):
     nacional = tabla[f"CANTIDAD_{sufijo}"].sum() / tabla["Población"].sum() * 100000
     tasa = fila[f"TASA_{sufijo}"]
@@ -231,6 +237,7 @@ def main():
     with f1:
                 año_robo = st.selectbox("AÑO - ROBO", [2023, 2024, 2025])
                 tabla_robo = cargar_datos(año_robo)
+                tabla_todos = cargar_todos()
                 
     with f2:
                 depto = st.selectbox("DEPARTAMENTO",["AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
@@ -314,7 +321,29 @@ def main():
             fig_rank.update_yaxes(categoryorder="total ascending")
             fig_rank.update_traces(texttemplate="%{x:,.1f}",textposition="outside",cliponaxis=False)
             st.plotly_chart(fig_rank, width="stretch", config={"displayModeBar": False})
+            
+    nombre_delito = delitos[delito]
+    nom_tasa= f"TASA_{nombre_delito}"
+    nom_cantidad = f"CANTIDAD_{nombre_delito}"
+    serie_depto = tabla_todos[tabla_todos["DEPARTAMENTO"] == depto][["ANO", nom_tasa]]
+    serie_depto.columns = ["Año", "Tasa"]
+    serie_depto["Serie"] = depto
     
+    nacional = tabla_todos.groupby("ANO").agg( casos=(nom_cantidad, "sum"), poblacion=("Población", "sum")).reset_index()
+    nacional["Tasa"] = nacional["casos"] / nacional["poblacion"] * 100000
+    nacional["Año"] = nacional["ANO"]
+    nacional["Serie"] = "Colombia"
+
+    datos_linea = pd.concat([serie_depto, nacional[["Año", "Tasa", "Serie"]]],ignore_index=True)
+    
+    with st.container(border=True):
+        fig_evolucion = px.line(datos_linea, x="Año", y="Tasa", color="Serie", markers=True,
+        color_discrete_map={depto: "#8B008B", "Colombia": "#EBA31C"})
+        fig_evolucion.update_layout(height=500, showlegend=False, title=f"Evolucion del delito de {delito} en {depto}",
+                paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",font_color="#000000",margin=dict(r=70))
+        fig_evolucion.update_xaxes(dtick=1, title=None)
+        st.plotly_chart(fig_evolucion,width="stretch", config={"displayModeBar": False})
+        
     st.divider()
     st.header("ROBO - IMP")
     
