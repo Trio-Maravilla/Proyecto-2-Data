@@ -207,6 +207,7 @@ def main():
     st.markdown("**Violencia intrafamiliar:** *Maltrato físico o psicológico dentro del hogar hacia cualquier miembro de la familia o hacia personas que estén bajo el cuidado de alguien en esa casa. Se cuenta por víctimas.*")
     
     st.header("Robos por departamento")
+    
     delitos = {"Medio ambiente":"del_med_ambiente", 
                             "Informaticos":"del_informaticos",
                             "Sexuales":"del_sexuales",
@@ -232,7 +233,7 @@ def main():
                                                     "NORTE DE SANTANDER","PUTUMAYO","QUINDIO","RISARALDA","SAN ANDRES",
                                                     "SANTANDER","SUCRE","TOLIMA","VALLE DEL CAUCA","VAUPES","VICHADA"])
     with f3:
-        delito = st.selectbox("DELITOS", list(delitos.keys()))
+        delito = st.selectbox("DELITOS ", list(delitos.keys()))
             
     fila_elegida = tabla_robo[tabla_robo["depto_limpio"] == depto].iloc[0]
     st.subheader(f"📍 {depto} ({año_robo})")
@@ -318,84 +319,53 @@ def main():
     st.divider()
     st.header("ROBO - IMP")
     
-    izq_robo, der_robo = st.columns([3,4.5])
     
-    with der_robo:
+    
+    dimensiones = {"Analfabetismo":"Analfabetismo",
+                   "Bajo logro educatico":"Bajo logro educativo",
+                   "Cuidado primera infancia":"Barreras a servicios para cuidado de la primera infancia",
+                   "Acceso servicio de saluid":"Barreras de acceso a servicios de salud",
+                    "Desempleo prolongado":"Desempleo de larga duración",
+                    "Hacinamiento critico":"Hacinamiento crítico",
+                    "Eliminacion de excretas":"Inadecuada eliminación de excretas",
+                    "Inasistencia escolar":"Inasistencia escolar",
+                    "Material inadecuado paredes":"Material inadecuado de paredes exteriores",
+                    "Materias inadecuado pisos":"Material inadecuado de pisos",
+                    "Regazo escolar":"Rezago escolar",
+                    "Sin acceso al agua":"Sin acceso a fuente de agua mejorada",
+                    "Sin aseguramiento en salud":"Sin aseguramiento en salud",
+                    "Trabajo infantil":"Trabajo infantil",
+                    "Trabajo informal":"Trabajo informal"}
+    
+    fi1,fi2,fi3,fi4 = st.columns(4)
+    
+    with fi1:
         año_robo = st.selectbox("AÑOS", [2023, 2024, 2025])
-        mapa_robo = cargar_mapa()
-        tabla_robo = cargar_datos(año_robo)
-        fig_robo = px.choropleth(
-            tabla_robo,
-            geojson=mapa_robo,
-            locations="depto_limpio",
-            featureidkey="properties.nombre_limpio",
-            color="Total",
-            color_continuous_scale=["#FDF5E6","#8B008B"], 
-            labels={"Total": "% IPM "},
-            range_color=[0, 100],
-            #colo azul = "#E0FFFF","#008B8B"
-        )
-        fig_robo.update_layout(height= 820,margin=dict(l=0, r=0, t=0, b=0),coloraxis_colorbar=dict(lenmode="pixels",len=650,
-                                                                                              thickness=20,x=0.88,outlinecolor="#000000",outlinewidth=1.5,
-                                                                                              tickfont=dict(color="#000000", size=13),
-                                                                                              title=dict(font=dict(color="#000000", size=14))),
-                                                                                              dragmode="pan", paper_bgcolor="rgba(0,0,0,0)",
-                                                                                              clickmode = "event+select")
-        
-        fig_robo.update_geos(visible=False, bgcolor="rgba(0,0,0,0)",projection_type="mercator",lataxis_range=[-4.5, 13.5],lonaxis_range=[-79.5, -66.5])   
-        fig_robo.update_traces(marker_line_color="#000000",  marker_line_width=1.2) 
-        robo = st.plotly_chart(fig_robo, use_container_width=True, on_select="rerun",
-            selection_mode="points",key="mapa_robos", config={"scrollZoom": False, "displayModeBar": False}) 
-    with izq_robo: 
-        st.markdown("<div style='margin-top: 85px;'></div>", unsafe_allow_html=True)
 
-        if robo and robo.selection:
-                puntos_seleccionados = robo.selection.points
-        else:
-            puntos_seleccionados = []
+
+    with fi2: 
+        depto_2 = st.selectbox("DEPARTAMENTOS",["Todos","AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
+                                                    "BOGOTA","BOLIVAR","BOYACA","CALDAS","CAQUETA",
+                                                    "CASANARE","CAUCA","CESAR","CHOCO","CORDOBA","CUNDINAMARCA",
+                                                    "GUAINIA","GUAVIARE","HUILA","GUAJIRA","MAGDALENA","META","NARIÑO",
+                                                    "NORTE DE SANTANDER","PUTUMAYO","QUINDIO","RISARALDA","SAN ANDRES",
+                                                    "SANTANDER","SUCRE","TOLIMA","VALLE DEL CAUCA","VAUPES","VICHADA"])
             
-        if puntos_seleccionados:
-            punto = puntos_seleccionados[0]
-            if "point_index" in punto:
-                datos_mostrar = tabla_robo.iloc[punto["point_index"]]
-            else:
-                depto_elegido = punto["location"]
-                datos_mostrar = tabla_robo[tabla_robo["depto_limpio"] == depto_elegido].iloc[0]
-                
-            st.subheader(f"📍 {datos_mostrar['DEPARTAMENTO']} ({año_robo})")
-        else:
-            datos_mostrar = tabla_robo.sum(numeric_only = True)
-            st.subheader(f"Total Nacional ({año_robo})")
+    with fi3:
+        lista = ["Ninguno"]
+        for i in delitos.keys():
             
-        c1, c2 = st.columns(2)
-        medio_ambiente = float(datos_mostrar["CANTIDAD_del_med_ambiente"])
-        delitos_informaticos = float(datos_mostrar["CANTIDAD_del_informaticos"])
-        delitos_sexuales = float(datos_mostrar["CANTIDAD_del_sexuales"])
-        delitos_extorsion = float(datos_mostrar["CANTIDAD_extorsion"])
-        hurto_vehiculos = float(datos_mostrar["CANTIDAD_hurto_vehiculos"])
-        hurto_personas = float(datos_mostrar["CANTIDAD_hurto_personas"])
-        incautacion = float(datos_mostrar["CANTIDAD_incautacion_estupefacientes"])
-        masacres = float(datos_mostrar["CANTIDAD_masacres"])
-        pirateria_terrestre = float(datos_mostrar["CANTIDAD_pirateria_terrestre"])
-        secuestro = float(datos_mostrar["CANTIDAD_secuestro"])
-        terrorismo = float(datos_mostrar["CANTIDAD_terrorismo"])
-        violencia_intrafamiliar = float(datos_mostrar["CANTIDAD_violencia_intrafamiliar"])
-        with c1: 
-            st.metric(":material/eco: Medio ambiente", f"{medio_ambiente:.1f}")
-            st.metric(":material/computer: Informaticos", f"{delitos_informaticos:.1f}")
-            st.metric(":material/gavel: Sexuales", f"{delitos_sexuales:.1f}")
-            st.metric(":material/money_off: Extorción", f"{delitos_extorsion:.1f}")
-            st.metric(":material/directions_car: Hurto vehiculos", f"{hurto_vehiculos:.1f}")
-            st.metric(":material/account_balance_wallet: Hurto personas", f"{hurto_personas:.1f}")
+            lista.append(i)
             
-        with c2: 
-            st.metric(":material/science: Incautacion", f"{incautacion:.1f}")
-            st.metric(":material/crisis_alert: Masacres", f"{masacres:.1f}")
-            st.metric(":material/local_shipping: Pirateria Terrestre", f"{pirateria_terrestre:.1f}")
-            st.metric(":material/lock_person: Secuestro", f"{secuestro:.1f}")
-            st.metric(":material/explosion: Terrorismo", f"{terrorismo:.1f}")
-            st.metric(":material/family_restroom: Violencia intrafamiliar", f"{violencia_intrafamiliar:.1f}")
-    
+        delito_2 = st.selectbox("DELITOS",lista )
+        
+    with fi4:
+        lista_dimensiones = list(dimensiones.keys())
+        for d in dimensiones.keys():
+            lista_dimensiones.append(d)
+        indices_ipm = st.selectbox("Dimension",lista_dimensiones)
+
+
     
     
 main()
