@@ -451,6 +451,38 @@ def main():
             st.metric(":material/child_friendly: Trabajo infantil", f"{trabajo_infantil:.1f}%")
             st.metric(":material/construction: Trabajo informal", f"{trabajo_informal:.1f}%")
             
+    lista_delitos = ["Todos"]
+    for i in delitos.keys():
+                
+        lista_delitos.append(i)
+                
+                    
+    delito_matriz = st.selectbox(" Delitos ", lista_delitos)
+    
+    
+    
+    numericas = tabla_todos.select_dtypes(include="number").columns
+    excluir = ["ANO", "Población"]
+    dimensiones_ipm = [c for c in numericas
+                    if c not in excluir and not c.startswith(("CANTIDAD_", "TASA_"))]
+    cols_tasas = [c for c in numericas if c.startswith("TASA_")]
+    df_depto = (tabla_todos
+                .groupby("DEPARTAMENTO")[cols_tasas + dimensiones_ipm]
+                .mean())
+
+    matriz_depto = (df_depto
+                    .corr(method="spearman")
+                    .loc[cols_tasas, dimensiones_ipm])
+    matriz_depto = matriz_depto.round(2)
+    
+    if delito_matriz == "Todos":
+            matriz_mostrar = matriz_depto
+            alto = 450
+    else:
+        fila_delito = f"TASA_{delitos[delito_matriz]}"
+        matriz_mostrar = matriz_depto.loc[[fila_delito]]
+        alto = 220
+    st.dataframe(matriz_mostrar)
     
     with st.expander("📌Notas de metodologia y advertencias",expanded=False):
         st.markdown("""
