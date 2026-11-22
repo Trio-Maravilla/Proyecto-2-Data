@@ -44,7 +44,7 @@ def calcular(tabla, fila, sufijo):
     nacional = tabla[f"CANTIDAD_{sufijo}"].sum() / tabla["Población"].sum() * 100000
     tasa = fila[f"TASA_{sufijo}"]
     if nacional > 0:
-        diferencia = (tasa - nacional / nacional) * 100
+        diferencia = (tasa - nacional) / nacional * 100
     else:
         diferencia = 0
     return tasa, diferencia
@@ -164,7 +164,7 @@ def main():
                 
             st.subheader(f"📍 {datos_mostrar['DEPARTAMENTO']} ({año_ipm})")
         else:
-            datos_mostrar = tabla.mean(numeric_only = True)
+            datos_mostrar = tabla.select_dtypes("number").mul(tabla["Población"], axis=0).sum() / tabla["Población"].sum()
             st.subheader(f"Promedio General ({año_ipm})")
             
         c1, c2 = st.columns(2)
@@ -249,7 +249,7 @@ def main():
     with f3:
         delito = st.selectbox("DELITOS ", list(delitos.keys()))
             
-    fila_elegida = tabla_robo[tabla_robo["depto_limpio"] == depto].iloc[0]
+    fila_elegida = tabla_robo[tabla_robo["DEPARTAMENTO"] == depto].iloc[0]
     st.subheader(f"📍 {depto} ({año_robo})")
     
     izq_robo, der_robo = st.columns([1,1])
@@ -298,7 +298,7 @@ def main():
             st.metric(":material/lock_person: Secuestro", f"{tasa:,.1f}",
                       delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
             tasa, dif = calcular(tabla_robo, fila_elegida, "terrorismo")
-            st.metric(":material/explosion: Medio ambiente", f"{tasa:,.1f}",
+            st.metric(":material/explosion: Terrorismo", f"{tasa:,.1f}",
                       delta=f"{dif:+.0f}% vs. país", delta_color="inverse")
 
             tasa, dif = calcular(tabla_robo, fila_elegida, "violencia_intrafamiliar")
@@ -402,7 +402,7 @@ def main():
         st.header("Grafico de dispersion")
         with st.container(border=True):
             
-            fig_scatter = px.scatter(tabla_correlaciones, x=indicador,y=crimen,color="Elegido", color_discrete_sequence= { True: "#D53ED5", False:"#FDF5E6"},
+            fig_scatter = px.scatter(tabla_correlaciones, x=indicador,y=crimen,color="Elegido", color_discrete_map= { True: "#D53ED5", False:"#FDF5E6"},
                                     category_orders={"Elegido":[False,True]},hover_name="DEPARTAMENTO", labels={indicador:f"{indices_ipm} %", crimen:"Casos por 100.000 habitantes"})
             fig_scatter.update_traces(marker=dict(size=11, line=dict(width=1, color="#1E293B")))
             fig_scatter.update_layout(height=800, showlegend=False, title=f"{indices_ipm} vs. {delito_2} ({años})",paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",font_color="#000000",)
@@ -411,7 +411,7 @@ def main():
 
     with col2:
         if depto_2 == "Ninguno":
-            datos_mostrar = tabla_correlaciones.mean(numeric_only=True)
+            datos_mostrar = tabla_correlaciones.select_dtypes("number").mul(tabla_correlaciones["Población"], axis=0).sum() / tabla_correlaciones["Población"].sum()
             st.subheader("Promedio General")
         else:
             datos_mostrar = tabla_correlaciones[tabla_correlaciones["DEPARTAMENTO"] == depto_2].iloc[0]
