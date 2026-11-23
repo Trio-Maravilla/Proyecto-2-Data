@@ -48,7 +48,7 @@ def calcular(tabla, fila, sufijo):
     else:
         diferencia = 0
     return tasa, diferencia
-
+    
 def main():
     st.set_page_config(page_title="IPM-ROBOS", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
     st.markdown("""
@@ -206,18 +206,19 @@ def main():
     # Segundo mapa - Sobre robos
     
     st.header("Tipos de robo")
-    st.markdown("### **Delitos contra el medio ambiente:** *Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.*")
-    st.markdown("**Delitos informaticos :** *Crímenes cometidos por internet o dispositivos electrónicos. Incluye hackear sistemas, robar contraseñas o datos personales, crear páginas falsas para estafar (phishing), usar virus y robar dinero de cuentas bancarias.*")
-    st.markdown("**Delitos sexuales:** *Cualquier agresión o abuso contra la libertad sexual de alguien, como violaciones, tocamientos abusivos o explotación sexual. Se cuenta por el número de víctimas.*")
-    st.markdown("**Delitos de extorsión:** *Amenazar o presionar a alguien para obligarlo a hacer algo (generalmente pagar dinero) a cambio de no hacerle daño a él, a su familia o a su negocio. Se cuenta por víctimas.*")
-    st.markdown("**Hurto a vehiculos:** *El robo de carros, camionetas o motos. Se cuenta por la cantidad de vehículos robados (unidades), no por personas.*")
-    st.markdown("**Huerto a personas:** *El robo directo de las cosas de valor que alguien lleva encima (celular, billetera, bolso, etc.). Se cuenta por víctimas.*")
-    st.markdown("**Incautacion de estupecafientes:** *No es un delito contra un ciudadano, sino el registro de las drogas ilegales que la Policía logra decomisar en sus operativos. (Estos datos van de enero de 2010 a julio de 2026).*")
-    st.markdown("**Masacres:** *El asesinato intencional y al mismo tiempo de 3 o más personas indefensas en un mismo lugar y por un mismo atacante (sin contar enfrentamientos entre bandas criminales). Se cuenta tanto por casos como por víctimas (medido así desde 2022).*")
-    st.markdown("**Pirateria terrestre:** *Asaltar camiones de carga o buses de pasajeros para robar la mercancía o los bienes que llevan, ya sea en plena carretera o cuando están estacionados. Se cuenta por las personas afectadas.*")
-    st.markdown("**Secuestro:** *Retener a una persona contra su voluntad. Incluye tanto los casos donde no se pide nada a cambio \n como aquellos donde exigen dinero o condiciones para liberarla.*")
-    st.markdown("**Terrorismo:** *Ataques graves (con explosivos o medios destructivos) diseñados para sembrar pánico en la población y poner en peligro vidas, edificios, transporte o comunicaciones. Se cuenta por casos*")
-    st.markdown("**Violencia intrafamiliar:** *Maltrato físico o psicológico dentro del hogar hacia cualquier miembro de la familia o hacia personas que estén bajo el cuidado de alguien en esa casa. Se cuenta por víctimas.*")
+    st.markdown("""
+    * **Delitos contra el medio ambiente:** Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.
+    * **Delitos informáticos:** Crímenes cometidos por internet o dispositivos electrónicos. Incluye hackear sistemas, robar contraseñas o datos personales, crear páginas falsas para estafar (phishing), usar virus y robar dinero de cuentas bancarias.
+    * **Delitos sexuales:** Cualquier agresión o abuso contra la libertad sexual de alguien, como violaciones, tocamientos abusivos o explotación sexual. Se cuenta por el número de víctimas.
+    * **Extorsión:** Amenazar o presionar a alguien para obligarlo a hacer algo (generalmente pagar dinero) a cambio de no hacerle daño a él, a su familia o a su negocio. Se cuenta por víctimas.
+    * **Hurto a vehículos:** El robo de carros, camionetas o motos. Se cuenta por la cantidad de vehículos robados (unidades), no por personas.
+    * **Hurto a personas:** El robo directo de las cosas de valor que alguien lleva encima (celular, billetera, bolso, etc.). Se cuenta por víctimas.
+    * **Incautación de estupefacientes:** No es un delito contra un ciudadano, sino el registro de las drogas ilegales que la Policía logra decomisar en sus operativos. Estos datos van de enero de 2010 a julio de 2026.
+    * **Masacres:** El asesinato intencional y al mismo tiempo de 3 o más personas indefensas en un mismo lugar y por un mismo atacante (sin contar enfrentamientos entre bandas criminales). Se cuenta tanto por casos como por víctimas (medido así desde 2022).
+    * **Piratería terrestre:** Asaltar camiones de carga o buses de pasajeros para robar la mercancía o los bienes que llevan, ya sea en plena carretera o cuando están estacionados. Se cuenta por las personas afectadas.
+    * **Secuestro:** Retener a una persona contra su voluntad. Incluye tanto los casos donde no se pide nada a cambio como aquellos donde exigen dinero o condiciones para liberarla.
+    * **Terrorismo:** Ataques graves (con explosivos o medios destructivos) diseñados para sembrar pánico en la población y poner en peligro vidas, edificios, transporte o comunicaciones. Se cuenta por casos.
+    * **Violencia intrafamiliar:** Maltrato físico o psicológico dentro del hogar hacia cualquier miembro de la familia o hacia personas que estén bajo el cuidado de alguien en esa casa. Se cuenta por víctimas.""")
     
     st.header("Robos por departamento")
     
@@ -339,7 +340,7 @@ def main():
     with st.container(border=True):
         fig_evolucion = px.line(datos_linea, x="Año", y="Tasa", color="Serie", markers=True,
         color_discrete_map={depto: "#8B008B", "Colombia": "#EBA31C"})
-        fig_evolucion.update_layout(height=500, showlegend=False, title=f"Evolucion del delito de {delito} en {depto}",
+        fig_evolucion.update_layout(height=500, showlegend=True, title=f"Evolucion del delito de {delito} en {depto}",
                 paper_bgcolor="rgba(0,0,0,0)",plot_bgcolor="rgba(0,0,0,0)",font_color="#000000",margin=dict(r=70))
         fig_evolucion.update_xaxes(dtick=1, title=None)
         st.plotly_chart(fig_evolucion,width="stretch", config={"displayModeBar": False})
