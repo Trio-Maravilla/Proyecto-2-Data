@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 
 CARPETA_DATOS = Path(__file__).parent.parent.parent / "Data/Processed"
 
+#Lineas de codigo para limpiar porque los datos no son capaces de limpiarse y armarse solitos
+
 cambios = {"BOGOTA, D.C.": "BOGOTA", "ARCHIPIELAGO DE SAN ANDRES, PROVIDENCIA Y SANTA CATALINA": "SAN ANDRES", "LA GUAJIRA": "GUAJIRA"}
 
 def limpiar(texto):
@@ -34,6 +36,10 @@ def cargar_datos(año):
     tabla["depto_limpio"] = tabla["DEPARTAMENTO"].apply(limpiar)
     return tabla
 
+# Si profe se que hubiera sido mas facil con el archivo completo en vez de separarlo por hojas, solo que cai en cuenta despues de hacerlo :/
+#Power BI no me hubiera hecho esto :(((
+
+
 @st.cache_data
 def cargar_todos():
     tabla = pd.read_csv(CARPETA_DATOS / "Metricas delitos segun departamento - 2023-2025.csv")
@@ -49,64 +55,64 @@ def calcular(tabla, fila, sufijo):
         diferencia = 0
     return tasa, diferencia
     
+#Ahora si viene el codigo chevere 
+
 def main():
     st.set_page_config(page_title="IPM-ROBOS", page_icon="📊", layout="wide", initial_sidebar_state="collapsed")
     st.markdown("""
     <style>
     .stApp, [data-testid="stHeader"] {
-        background-color: #FFFFFF !important;
-        color: #1E293B !important;
+        background-color: "#FFFDF9FF" !important;
+        color: #020203 !important;
     }
     
     h1, h2, h3, p, span, label, [data-testid="stMetricValue"] {  
-        color: #1E293B !important;
+        color: #111214 !important;
     }
+     /* Color de flechita de la caja */
     [data-testid="stSelectbox"] div[data-baseweb="select"] > div {
         background-color: #F1F5F9 !important; 
-        border-color: #1E293B !important;    
+        border-color: #020203 !important;    
         color: #000000 !important;            
     }
-    /* Flechita de la caja */
+    /* Color de flechita de la caja */
     [data-testid="stSelectbox"] div[data-baseweb="select"] span,
     [data-testid="stSelectbox"] div[data-baseweb="select"] input {
         color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
+
     }
     [data-testid="stSelectbox"] svg {
         fill: #000000 !important;
         color: #000000 !important;
     }
     
-    /* Lista desplegable de la caja */
+    /* Color de la lista desplegable de la caja */
     div[data-baseweb="popover"],
     div[data-baseweb="popover"] > div,
     ul[role="listbox"] {
         background-color: #FFFFFF !important;
         border: 1px solid #CBD5E1 !important;
     }
+    
+     /* Es mas facil poner color en power BI profe */
 
-    /* Opciones dentro del menu */
+    /* Color de las opciones dentro del menu */
     li[role="option"],
     li[role="option"] span,
     li[role="option"] div {
         background-color: #FFFFFF !important;
         color: #000000 !important;
     }
-    
-    li[role="option"]:hover,
-    li[role="option"][aria-selected="true"],
-    li[role="option"]:hover span,
-    li[role="option"][aria-selected="true"] span {
-        background-color: #E2E8F0 !important;
-        color: #000000 !important;
-        
-    }
-       
+      
+    /*Color de los iconos, y el tamaño de fuente del texto que lo acompaña*/
+     
     [data-testid="stMetricLabel"] span[role="img"] {
         font-size: 2.2rem !important;
         vertical-align: middle !important;
         color: #8B008B !important;
     }
+    
+    /* Margenes blancas al rededor :o*/
     [data-testid="stMainBlockContainer"] {
     max-width: 1700px;
     padding-top: 2rem;
@@ -116,14 +122,15 @@ def main():
     </style>
     """, unsafe_allow_html=True)
     
-    st.title("Pobreza y Delito: ¿Qué tanto influye el IPM en los hurtos en Colombia?")
-    st.caption("Análisis departamental de la relación entre pobreza multidimensional y modalidades de robo (2023–2025).")
-    st.sidebar.header("Datos")
-    st.header("IPM Por departamento")
+    #Ahora si viene lo chido 
+    
+    st.title("Pobreza y delito en Colombia: ¿caminan juntos?")
+    st.caption("¿Los departamentos con más pobreza son también los de más delitos? Compara el IPM con 12 delitos, departamento por departamento, de 2023 a 2025.")
+    st.header("¿Qué tan pobre es cada rincón del país?")
     izq_ipm, der_ipm = st.columns([4.5, 3])
 
     with izq_ipm:
-        año_ipm = st.selectbox("AÑO - IPM", [2023, 2024, 2025])
+        año_ipm = st.selectbox("Año del IPM", [2023, 2024, 2025])
         mapa = cargar_mapa()
         tabla = cargar_datos(año_ipm)
         fig = px.choropleth(
@@ -203,29 +210,29 @@ def main():
             
     st.divider()
     
-    # Segundo mapa - Sobre robos
+    # Segunda parte - Sobre robos
+    with st.expander("🚨Especificacion de cada robo",expanded=True):
+        st.header("Diccionario del delito")
+        st.markdown("""
+        * **Delitos contra el medio ambiente:** Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.
+        * **Delitos informáticos:** Crímenes cometidos por internet o dispositivos electrónicos. Incluye hackear sistemas, robar contraseñas o datos personales, crear páginas falsas para estafar (phishing), usar virus y robar dinero de cuentas bancarias.
+        * **Delitos sexuales:** Cualquier agresión o abuso contra la libertad sexual de alguien, como violaciones, tocamientos abusivos o explotación sexual. Se cuenta por el número de víctimas.
+        * **Extorsión:** Amenazar o presionar a alguien para obligarlo a hacer algo (generalmente pagar dinero) a cambio de no hacerle daño a él, a su familia o a su negocio. Se cuenta por víctimas.
+        * **Hurto a vehículos:** El robo de carros, camionetas o motos. Se cuenta por la cantidad de vehículos robados (unidades), no por personas.
+        * **Hurto a personas:** El robo directo de las cosas de valor que alguien lleva encima (celular, billetera, bolso, etc.). Se cuenta por víctimas.
+        * **Incautación de estupefacientes:** No es un delito contra un ciudadano, sino el registro de las drogas ilegales que la Policía logra decomisar en sus operativos. Estos datos van de enero de 2010 a julio de 2026.
+        * **Masacres:** El asesinato intencional y al mismo tiempo de 3 o más personas indefensas en un mismo lugar y por un mismo atacante (sin contar enfrentamientos entre bandas criminales). Se cuenta tanto por casos como por víctimas (medido así desde 2022).
+        * **Piratería terrestre:** Asaltar camiones de carga o buses de pasajeros para robar la mercancía o los bienes que llevan, ya sea en plena carretera o cuando están estacionados. Se cuenta por las personas afectadas.
+        * **Secuestro:** Retener a una persona contra su voluntad. Incluye tanto los casos donde no se pide nada a cambio como aquellos donde exigen dinero o condiciones para liberarla.
+        * **Terrorismo:** Ataques graves (con explosivos o medios destructivos) diseñados para sembrar pánico en la población y poner en peligro vidas, edificios, transporte o comunicaciones. Se cuenta por casos.
+        * **Violencia intrafamiliar:** Maltrato físico o psicológico dentro del hogar hacia cualquier miembro de la familia o hacia personas que estén bajo el cuidado de alguien en esa casa. Se cuenta por víctimas.""")
     
-    st.header("Tipos de robo")
-    st.markdown("""
-    * **Delitos contra el medio ambiente:** Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.
-    * **Delitos informáticos:** Crímenes cometidos por internet o dispositivos electrónicos. Incluye hackear sistemas, robar contraseñas o datos personales, crear páginas falsas para estafar (phishing), usar virus y robar dinero de cuentas bancarias.
-    * **Delitos sexuales:** Cualquier agresión o abuso contra la libertad sexual de alguien, como violaciones, tocamientos abusivos o explotación sexual. Se cuenta por el número de víctimas.
-    * **Extorsión:** Amenazar o presionar a alguien para obligarlo a hacer algo (generalmente pagar dinero) a cambio de no hacerle daño a él, a su familia o a su negocio. Se cuenta por víctimas.
-    * **Hurto a vehículos:** El robo de carros, camionetas o motos. Se cuenta por la cantidad de vehículos robados (unidades), no por personas.
-    * **Hurto a personas:** El robo directo de las cosas de valor que alguien lleva encima (celular, billetera, bolso, etc.). Se cuenta por víctimas.
-    * **Incautación de estupefacientes:** No es un delito contra un ciudadano, sino el registro de las drogas ilegales que la Policía logra decomisar en sus operativos. Estos datos van de enero de 2010 a julio de 2026.
-    * **Masacres:** El asesinato intencional y al mismo tiempo de 3 o más personas indefensas en un mismo lugar y por un mismo atacante (sin contar enfrentamientos entre bandas criminales). Se cuenta tanto por casos como por víctimas (medido así desde 2022).
-    * **Piratería terrestre:** Asaltar camiones de carga o buses de pasajeros para robar la mercancía o los bienes que llevan, ya sea en plena carretera o cuando están estacionados. Se cuenta por las personas afectadas.
-    * **Secuestro:** Retener a una persona contra su voluntad. Incluye tanto los casos donde no se pide nada a cambio como aquellos donde exigen dinero o condiciones para liberarla.
-    * **Terrorismo:** Ataques graves (con explosivos o medios destructivos) diseñados para sembrar pánico en la población y poner en peligro vidas, edificios, transporte o comunicaciones. Se cuenta por casos.
-    * **Violencia intrafamiliar:** Maltrato físico o psicológico dentro del hogar hacia cualquier miembro de la familia o hacia personas que estén bajo el cuidado de alguien en esa casa. Se cuenta por víctimas.""")
-    
-    st.header("Robos por departamento")
+    st.header("Seguridad en cifras:¿Cómo está tu departamento?")
     
     delitos = {"Medio ambiente":"del_med_ambiente", 
                             "Informaticos":"del_informaticos",
                             "Sexuales":"del_sexuales",
-                            " Extorción":"extorsion",
+                            " Extorsión":"extorsion",
                             "Hurto vehiculos":"hurto_vehiculos",
                             "Hurto personas":"hurto_personas",
                             "Incautacion":"incautacion_estupefacientes",
@@ -236,19 +243,19 @@ def main():
                             "Violencia intrafamiliar":"violencia_intrafamiliar"}
     f1,f2,f3 = st.columns(3)
     with f1:
-                año_robo = st.selectbox("AÑO - ROBO", [2023, 2024, 2025])
+                año_robo = st.selectbox("Año de los delitos", [2023, 2024, 2025])
                 tabla_robo = cargar_datos(año_robo)
                 tabla_todos = cargar_todos()
                 
     with f2:
-                depto = st.selectbox("DEPARTAMENTO",["AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
+                depto = st.selectbox("¿Qué departamento?",["AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
                                                     "BOGOTA","BOLIVAR","BOYACA","CALDAS","CAQUETA",
                                                     "CASANARE","CAUCA","CESAR","CHOCO","CORDOBA","CUNDINAMARCA",
                                                     "GUAINIA","GUAVIARE","HUILA","GUAJIRA","MAGDALENA","META","NARIÑO",
                                                     "NORTE DE SANTANDER","PUTUMAYO","QUINDIO","RISARALDA","SAN ANDRES",
                                                     "SANTANDER","SUCRE","TOLIMA","VALLE DEL CAUCA","VAUPES","VICHADA"])
     with f3:
-        delito = st.selectbox("DELITOS ", list(delitos.keys()))
+        delito = st.selectbox("Tipo de delito", list(delitos.keys()))
             
     fila_elegida = tabla_robo[tabla_robo["DEPARTAMENTO"] == depto].iloc[0]
     st.subheader(f"📍 {depto} ({año_robo})")
@@ -345,8 +352,9 @@ def main():
         fig_evolucion.update_xaxes(dtick=1, title=None)
         st.plotly_chart(fig_evolucion,width="stretch", config={"displayModeBar": False})
         
+    #Tercera parte, las correlaciones
     st.divider()
-    st.header("ROBO - IMP")
+    st.header("Pobreza y delito: ¿se mueven juntos?")
     
     
     
@@ -369,11 +377,11 @@ def main():
     fi1,fi2,fi3,fi4 = st.columns(4)
     
     with fi1:
-        años = st.selectbox("AÑOS", [2023, 2024, 2025])
+        años = st.selectbox("Año a comparar", [2023, 2024, 2025])
         tabla_correlaciones = cargar_datos(años)
 
     with fi2: 
-        depto_2 = st.selectbox("DEPARTAMENTOS",["Ninguno","AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
+        depto_2 = st.selectbox("Departamento a destacar",["Ninguno","AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
                                                     "BOGOTA","BOLIVAR","BOYACA","CALDAS","CAQUETA",
                                                     "CASANARE","CAUCA","CESAR","CHOCO","CORDOBA","CUNDINAMARCA",
                                                     "GUAINIA","GUAVIARE","HUILA","GUAJIRA","MAGDALENA","META","NARIÑO",
@@ -386,13 +394,13 @@ def main():
             
             lista.append(i)
             
-        delito_2 = st.selectbox("DELITOS",lista )
+        delito_2 = st.selectbox("Tipo de delito ",lista )
         
     with fi4:
         lista_indicadores = []
         for d in indicadores.keys():
             lista_indicadores.append(d)
-        indices_ipm = st.selectbox("Dimension",lista_indicadores)
+        indices_ipm = st.selectbox("Indicador del IPM",lista_indicadores)
         
     indicador = indicadores[indices_ipm]
     crimen= f"TASA_{delitos[delito_2]}"
@@ -403,9 +411,9 @@ def main():
         st.header("Grafico de dispersion")
         with st.container(border=True):
             
-            fig_scatter = px.scatter(tabla_correlaciones, x=indicador,y=crimen,color="Elegido", color_discrete_map= { True: "#D53ED5", False:"#FDF5E6"},
+            fig_scatter = px.scatter(tabla_correlaciones, x=indicador,y=crimen,color="Elegido", color_discrete_map= { True: "#D53ED5", False:"#FFEECF"},
                                     category_orders={"Elegido":[False,True]},hover_name="DEPARTAMENTO", labels={indicador:f"{indices_ipm} %", crimen:"Casos por 100.000 habitantes"})
-            fig_scatter.update_traces(marker=dict(size=11, line=dict(width=1, color="#1E293B")))
+            fig_scatter.update_traces(marker=dict(size=11, line=dict(width=1, color="#020203")))
             fig_scatter.update_layout(height=800, showlegend=False, title=f"{indices_ipm} vs. {delito_2} ({años})",paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",font_color="#000000",)
             fig_scatter.update_yaxes(rangemode="tozero")
             st.plotly_chart(fig_scatter,width="stretch", config={"displayModeBar": False})
@@ -451,14 +459,17 @@ def main():
             st.metric(":material/health_and_safety: Sin aseguramiento en salud", f"{sin_aseguramiento_salud:.1f}%")
             st.metric(":material/child_friendly: Trabajo infantil", f"{trabajo_infantil:.1f}%")
             st.metric(":material/construction: Trabajo informal", f"{trabajo_informal:.1f}%")
-            
+           
+    st.header("¿Qué indicador pesa más en cada delito?") 
     lista_delitos = ["Todos"]
     for i in delitos.keys():
                 
         lista_delitos.append(i)
                 
                     
-    delito_matriz = st.selectbox(" Delitos ", lista_delitos)
+    #Una linda matriz para ver mejor
+    
+    delito_matriz = st.selectbox("Delito en la matriz", lista_delitos)
     
     
     
@@ -485,12 +496,18 @@ def main():
         alto = 220
     st.dataframe(matriz_mostrar)
     
-    with st.expander("📌Notas de metodologia y advertencias",expanded=False):
+    #Advertencias por supuesto que si 
+    with st.expander("📌 Lo que los datos no dicen", expanded=False):
         st.markdown("""
-                    Para realizar el analisis se juntaron 12 archivos diferentes de delitos y 1 del DANE con la informacion del IPM
-                    * **SESGOS**
-                    * El analisis cuenta con la cantidad de robos registrados, esto no implica que sean los que mas ocurren sino los que mas estan registrados
-                    * Tambien pueden haber manipulacion de datos para hacer que un pais no quede mal al momento del analisi""")
+        Este análisis cruza el IPM del DANE con 12 archivos de delitos registrados por departamento. Antes de sacar conclusiones, tenga presente:            
+        * **Relación no es causa:** Que dos indicadores suban juntos no significa que uno provoque al otro. Pueden influir otros factores que aquí no se miden.
+        * **Solo se ven los delitos denunciados:** Las cifras muestran lo que se registra, no todo lo que ocurre. Donde se denuncia menos puede estar más oculto de lo que se ve.
+        * **Un departamento no es una persona:** Los datos son promedios por departamento. Que un departamento tenga mucha pobreza y muchos delitos no quiere decir que los delitos los cometan las personas pobres.
+        * **Medicion:** El analisis fue hecho mediante la cantidad de crimenes, no la gravedad de este mismo.
+        * **Las cifras son tasas:** Se muestran por cada 100.000 habitantes para poder comparar departamentos grandes y pequeños, pero en los departamentos con poca población un solo caso mueve mucho el resultado.
+        """)
     
     
 main()
+
+#Muy exotico profe, aunque mi primer amor siempre va a ser Power BI 
