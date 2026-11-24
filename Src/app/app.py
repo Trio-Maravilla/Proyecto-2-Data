@@ -129,8 +129,42 @@ def main():
     st.header("¿Qué tan pobre es cada rincón del país?")
     izq_ipm, der_ipm = st.columns([4.5, 3])
 
+    indicadores = {"IPM Total": "Total",
+                   "Analfabetismo":"Analfabetismo",
+                   "Bajo logro educatico":"Bajo logro educativo",
+                   "Cuidado primera infancia":"Barreras a servicios para cuidado de la primera infancia",
+                   "Acceso servicio de salud":"Barreras de acceso a servicios de salud",
+                    "Desempleo prolongado":"Desempleo de larga duración",
+                    "Hacinamiento critico":"Hacinamiento crítico",
+                    "Eliminacion de excretas":"Inadecuada eliminación de excretas",
+                    "Inasistencia escolar":"Inasistencia escolar",
+                    "Material inadecuado paredes":"Material inadecuado de paredes exteriores",
+                    "Materias inadecuado pisos":"Material inadecuado de pisos",
+                    "Regazo escolar":"Rezago escolar",
+                    "Sin acceso al agua":"Sin acceso a fuente de agua mejorada",
+                    "Sin aseguramiento en salud":"Sin aseguramiento en salud",
+                    "Trabajo infantil":"Trabajo infantil",
+                    "Trabajo informal":"Trabajo informal"}
+    
+    with der_ipm:
+        lista_indi = []
+        for d in indicadores.keys():
+            lista_indi.append(d)
+                    
+        indi = st.selectbox("Indicador del IPM ",lista_indi)
+        
+        indicador_mapa=indicadores[indi]
+        if indi == "IPM Total":
+            color_maximo = 100
+        else:
+            color_maximo = cargar_todos()[indicador_mapa].max()
+            
+            
+
+            
     with izq_ipm:
         año_ipm = st.selectbox("Año del IPM", [2023, 2024, 2025])
+        
         mapa = cargar_mapa()
         tabla = cargar_datos(año_ipm)
         fig = px.choropleth(
@@ -138,10 +172,11 @@ def main():
             geojson=mapa,
             locations="depto_limpio",
             featureidkey="properties.nombre_limpio",
-            color="Total",
+            color=indicador_mapa,
             color_continuous_scale=["#FDF5E6","#8B008B"],
-            labels={"Total": "% IPM "},
-            range_color=[0, 100],
+            labels={indicador_mapa: f"% {indi}"},
+            range_color=[0, color_maximo],
+            hover_name="DEPARTAMENTO",
             
         )
         fig.update_layout(height= 820,margin=dict(l=0, r=0, t=0, b=0),coloraxis_colorbar=dict(lenmode="pixels",len=650,
@@ -155,8 +190,8 @@ def main():
         fig.update_traces(marker_line_color="#000000",  marker_line_width=1.2) 
         evento = st.plotly_chart(fig, use_container_width=True, on_select="rerun",
             selection_mode="points",key = "mapa_ipm", config={"scrollZoom": False, "displayModeBar": False})
+
     with der_ipm:
-        st.markdown("<div style='margin-top: 85px;'></div>", unsafe_allow_html=True)
         if evento and evento.selection:
                 puntos_seleccionados = evento.selection.points
         else:
@@ -207,6 +242,7 @@ def main():
             st.metric(":material/health_and_safety: Sin aseguramiento en salud", f"{sin_aseguramiento_salud:.1f}%")
             st.metric(":material/child_friendly: Trabajo infantil", f"{trabajo_infantil:.1f}%")
             st.metric(":material/construction: Trabajo informal", f"{trabajo_informal:.1f}%")
+            
             
     st.divider()
     
@@ -357,23 +393,6 @@ def main():
     st.header("Pobreza y delito: ¿se mueven juntos?")
     
     
-    
-    indicadores = {"IPM Total": "Total",
-                   "Analfabetismo":"Analfabetismo",
-                   "Bajo logro educatico":"Bajo logro educativo",
-                   "Cuidado primera infancia":"Barreras a servicios para cuidado de la primera infancia",
-                   "Acceso servicio de saluid":"Barreras de acceso a servicios de salud",
-                    "Desempleo prolongado":"Desempleo de larga duración",
-                    "Hacinamiento critico":"Hacinamiento crítico",
-                    "Eliminacion de excretas":"Inadecuada eliminación de excretas",
-                    "Inasistencia escolar":"Inasistencia escolar",
-                    "Material inadecuado paredes":"Material inadecuado de paredes exteriores",
-                    "Materias inadecuado pisos":"Material inadecuado de pisos",
-                    "Regazo escolar":"Rezago escolar",
-                    "Sin acceso al agua":"Sin acceso a fuente de agua mejorada",
-                    "Sin aseguramiento en salud":"Sin aseguramiento en salud",
-                    "Trabajo infantil":"Trabajo infantil",
-                    "Trabajo informal":"Trabajo informal"}
     
     fi1,fi2,fi3,fi4 = st.columns(4)
     
