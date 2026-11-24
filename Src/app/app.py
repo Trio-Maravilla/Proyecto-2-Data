@@ -247,7 +247,7 @@ def main():
     st.divider()
     
     # Segunda parte - Sobre robos
-    with st.expander("🚨Especificacion de cada robo",expanded=True):
+    with st.expander("🚨Especificacion de cada delito",expanded=True):
         st.header("Diccionario del delito")
         st.markdown("""
         * **Delitos contra el medio ambiente:** Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.
