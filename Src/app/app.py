@@ -358,7 +358,8 @@ def main():
     
     
     
-    indicadores = {"Analfabetismo":"Analfabetismo",
+    indicadores = {"IPM Total": "Total",
+                   "Analfabetismo":"Analfabetismo",
                    "Bajo logro educatico":"Bajo logro educativo",
                    "Cuidado primera infancia":"Barreras a servicios para cuidado de la primera infancia",
                    "Acceso servicio de saluid":"Barreras de acceso a servicios de salud",
@@ -377,8 +378,11 @@ def main():
     fi1,fi2,fi3,fi4 = st.columns(4)
     
     with fi1:
-        años = st.selectbox("Año a comparar", [2023, 2024, 2025])
-        tabla_correlaciones = cargar_datos(años)
+        años = st.selectbox("Año a comparar", ["Promedio 2023-2025", 2023, 2024, 2025])
+        if años == "Promedio 2023-2025":
+            tabla_correlaciones = tabla_todos.groupby("DEPARTAMENTO").mean(numeric_only=True).reset_index()
+        else:
+            tabla_correlaciones = cargar_datos(años)
 
     with fi2: 
         depto_2 = st.selectbox("Departamento a destacar",["Ninguno","AMAZONAS","ANTIOQUIA","ARAUCA","ATLANTICO",
@@ -409,6 +413,8 @@ def main():
     col1,col2 = st.columns(2)
     with col1: 
         st.header("Grafico de dispersion")
+        correlacion = tabla_correlaciones[indicador].rank().corr(tabla_correlaciones[crimen].rank())
+        st.caption(f"Correlación de Spearman: {correlacion:.2f}")
         with st.container(border=True):
             
             fig_scatter = px.scatter(tabla_correlaciones, x=indicador,y=crimen,color="Elegido", color_discrete_map= { True: "#D53ED5", False:"#FFEECF"},
