@@ -146,6 +146,9 @@ def main():
                     "Trabajo infantil":"Trabajo infantil",
                     "Trabajo informal":"Trabajo informal"}
     
+    #Me toco partirlo para que funcionara!!!
+    #Power BI no me hubiera hecho esto profe 
+     
     with der_ipm:
         lista_indi = []
         for d in indicadores.keys():
@@ -191,6 +194,8 @@ def main():
         evento = st.plotly_chart(fig, use_container_width=True, on_select="rerun",
             selection_mode="points",key = "mapa_ipm", config={"scrollZoom": False, "displayModeBar": False})
 
+    #Aqui vuelve a aparecer la primera derecha 
+    
     with der_ipm:
         if evento and evento.selection:
                 puntos_seleccionados = evento.selection.points
