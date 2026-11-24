@@ -157,12 +157,7 @@ def main():
         indi = st.selectbox("Indicador del IPM ",lista_indi)
         
         indicador_mapa=indicadores[indi]
-        if indi == "IPM Total":
-            color_maximo = 100
-        else:
-            color_maximo = cargar_todos()[indicador_mapa].max()
-            
-            
+        color_maximo = cargar_todos()[indicador_mapa].max()
 
             
     with izq_ipm:
