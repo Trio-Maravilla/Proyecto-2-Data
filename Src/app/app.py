@@ -247,7 +247,7 @@ def main():
     st.divider()
     
     # Segunda parte - Sobre robos
-    with st.expander("🚨Especificacion de cada delito",expanded=True):
+    with st.expander("Especificacion de cada delito",expanded=True):
         st.header("Diccionario del delito")
         st.markdown("""
         * **Delitos contra el medio ambiente:** Dañar o explotar ilegalmente la naturaleza, como talar bosques, contaminar ríos, traficar animales o hacer minería ilegal. Se cuenta por casos.
@@ -522,7 +522,7 @@ def main():
     st.dataframe(matriz_mostrar)
     
     #Advertencias por supuesto que si 
-    with st.expander("📌 Lo que los datos no dicen", expanded=False):
+    with st.expander("Lo que los datos no dicen", expanded=False):
         st.markdown("""
         Este análisis cruza el IPM del DANE con 12 archivos de delitos registrados por departamento. Antes de sacar conclusiones, tenga presente:            
         * **Relación no es causa:** Que dos indicadores suban juntos no significa que uno provoque al otro. Pueden influir otros factores que aquí no se miden.
