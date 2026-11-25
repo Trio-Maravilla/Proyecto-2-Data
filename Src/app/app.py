@@ -520,6 +520,36 @@ def main():
         alto = 220
     st.dataframe(matriz_mostrar)
     
+    st.header("¿Cuáles delitos suben y cuáles bajan con la pobreza?")
+    nombre_delitos = {}
+    for nombre in delitos.keys():
+        sufijo = delitos[nombre]
+        nombre_delitos[f"TASA_{sufijo}"] = nombre
+
+    datos_barras = matriz_depto["Total"].rename(index=nombre_delitos).reset_index()
+    datos_barras.columns = ["Delito", "Correlación"]
+
+    signos = []
+    for valor in datos_barras["Correlación"]:
+        if valor > 0:
+            signos.append("Positiva")
+        else:
+            signos.append("Negativa")
+    datos_barras["Signo"] = signos
+
+    fig_barras = px.bar(datos_barras, x="Correlación", y="Delito", orientation="h",
+                        color="Signo", text_auto=".2f",
+                        color_discrete_map={"Positiva": "#8B008B", "Negativa": "#EBA31C"})
+    
+    fig_barras.update_yaxes(categoryorder="total ascending", title=None)
+    fig_barras.update_xaxes(range=[-1, 1], title="Correlación de Spearman con el IPM")
+    fig_barras.update_layout(height=500, title="Relación de cada delito con el IPM",
+                             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                             font_color="#000000")
+    
+    with st.container(border=True):
+        st.plotly_chart(fig_barras, width="stretch", config={"displayModeBar": False})
+    
     #Advertencias por supuesto que si 
     with st.expander("Lo que los datos no dicen", expanded=False):
         st.markdown("""
