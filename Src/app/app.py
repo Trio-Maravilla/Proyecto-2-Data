@@ -4,7 +4,6 @@ import plotly.express as px
 import pandas as pd
 import unicodedata
 from pathlib import Path
-import matplotlib.pyplot as plt
 
 CARPETA_DATOS = Path(__file__).parent.parent.parent / "Data/Processed"
 
